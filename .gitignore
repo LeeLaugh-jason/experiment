@@ -1,0 +1,11 @@
+# 大文件排除
+ppt.zip
+ppt_extracted/
+*.ppt
+*.pptx
+
+# 系统文件
+.DS_Store
+Thumbs.db
+*.swp
+*~

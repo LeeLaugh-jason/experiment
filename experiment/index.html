@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>人机界面设计实验 — 移动端按钮点击实验</title>
+  <style>
+    /* ============================================================
+       全局重置
+       ============================================================ */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 14px;
+      background: #F5F5F5;
+      color: #333;
+      touch-action: none;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    /* ============================================================
+       页面容器 — SPA 多页切换
+       ============================================================ */
+    .page {
+      display: none;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0; left: 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .page.active {
+      display: flex;
+    }
+
+    /* ============================================================
+       通用组件
+       ============================================================ */
+    .btn {
+      padding: 12px 32px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: opacity 0.15s;
+    }
+
+    .btn:active {
+      opacity: 0.7;
+    }
+
+    .btn-primary {
+      background: #007AFF;
+      color: #fff;
+    }
+
+    .btn-primary:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
+
+    .btn-success {
+      background: #34C759;
+      color: #fff;
+    }
+
+    .btn-warning {
+      background: #FF9500;
+      color: #fff;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    p {
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 12px;
+      text-align: center;
+      max-width: 400px;
+    }
+
+    .notice-box {
+      background: #FFF3CD;
+      border: 1px solid #FFEAA7;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 8px 0;
+      font-size: 13px;
+      max-width: 380px;
+      text-align: center;
+    }
+
+    /* ============================================================
+       Page 1: 欢迎页
+       ============================================================ */
+    #page-welcome .logo {
+      font-size: 40px;
+      margin-bottom: 8px;
+    }
+
+    #page-welcome .consent-area {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 12px 0;
+      font-size: 14px;
+    }
+
+    #page-welcome .consent-area input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    /* ============================================================
+       Page 2: 被试登记
+       ============================================================ */
+    .form-group {
+      width: 100%;
+      max-width: 320px;
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #CCC;
+      border-radius: 6px;
+      font-size: 15px;
+      background: #fff;
+    }
+
+    .form-group .radio-group {
+      display: flex;
+      gap: 16px;
+    }
+
+    .form-group .radio-group label {
+      font-weight: 400;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ============================================================
+       Page 3: 实验页面
+       ============================================================ */
+    #page-experiment {
+      padding: 0;
+      background: #F5F5F5;
+    }
+
+    /* 顶部状态栏 */
+    .exp-header {
+      width: 100%;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255,255,255,0.9);
+      border-bottom: 1px solid #E0E0E0;
+      font-size: 14px;
+      font-weight: 500;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .exp-header .progress-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin: 0 2px;
+    }
+
+    .exp-header .progress-dot.done   { background: #34C759; }
+    .exp-header .progress-dot.active { background: #007AFF; }
+    .exp-header .progress-dot.pending { background: #DDD; }
+
+    /* 实验区域 — 按钮网格在这里渲染 */
+    .exp-area {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* 起始十字 */
+    .start-cross {
+      width: 60px;
+      height: 60px;
+      position: relative;
+      cursor: pointer;
+      z-index: 5;
+    }
+
+    .start-cross::before,
+    .start-cross::after {
+      content: '';
+      position: absolute;
+      background: #333;
+    }
+
+    .start-cross::before {
+      width: 4px;
+      height: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .start-cross::after {
+      width: 100%;
+      height: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    /* 按钮网格容器 */
+    .button-grid {
+      display: grid;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .button-grid .grid-btn {
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      transition: none;  /* 无过渡，确保 RT 准确 */
+    }
+
+    .button-grid .grid-btn.hit-feedback {
+      transition: background 0.05s;
+    }
+
+    /* 反馈文字的样式 */
+    .trial-feedback {
+      position: absolute;
+      font-size: 48px;
+      font-weight: bold;
+      pointer-events: none;
+      z-index: 20;
+      opacity: 0;
+      transition: opacity 0.1s;
+    }
+
+    .trial-feedback.show {
+      opacity: 1;
+    }
+
+    /* 超时提示 */
+    .timeout-msg {
+      position: absolute;
+      font-size: 18px;
+      color: #FF3B30;
+      font-weight: 600;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    /* ============================================================
+       Practice 模式提示
+       ============================================================ */
+    .practice-badge {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 20px;
+      font-weight: 700;
+      color: #FF9500;
+      z-index: 25;
+      pointer-events: none;
+      text-align: center;
+    }
+
+    /* ============================================================
+       Page 4: NASA-TLX 问卷
+       ============================================================ */
+    .tlx-slider-group {
+      width: 100%;
+      max-width: 360px;
+      margin-bottom: 16px;
+    }
+
+    .tlx-slider-group .tlx-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .tlx-slider-group input[type="range"] {
+      width: 100%;
+      height: 6px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: #DDD;
+      border-radius: 3px;
+      outline: none;
+    }
+
+    .tlx-slider-group input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #007AFF;
+      cursor: pointer;
+    }
+
+    .tlx-slider-group .tlx-value {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 700;
+      color: #007AFF;
+    }
+
+    /* ============================================================
+       Page 5: 完成页
+       ============================================================ */
+    #page-complete .export-area {
+      margin: 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+
+    /* ============================================================
+       Page 6: 休息页（条件间）
+       ============================================================ */
+    #page-break {
+      text-align: center;
+    }
+
+    #page-break .break-progress-bar {
+      width: 280px;
+      height: 8px;
+      background: #DDD;
+      border-radius: 4px;
+      margin: 16px auto;
+      overflow: hidden;
+    }
+
+    #page-break .break-progress-bar .fill {
+      height: 100%;
+      background: #007AFF;
+      border-radius: 4px;
+      transition: width 0.3s;
+    }
+
+    /* ============================================================
+       横屏提示
+       ============================================================ */
+    .rotate-warning {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: #333;
+      color: #fff;
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      font-size: 18px;
+      text-align: center;
+      padding: 40px;
+    }
+
+    @media screen and (orientation: landscape) and (max-height: 450px) {
+      .rotate-warning {
+        display: flex;
+      }
+    }
+
+    /* 一加机型等挖孔屏的特殊安全区处理 */
+    .safe-area-padding {
+      padding-top: env(safe-area-inset-top, 0);
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================
+       横屏旋转提示
+       ============================================================ -->
+  <div class="rotate-warning" id="rotate-warning">
+    <div style="font-size:64px;margin-bottom:16px;">&#x1F4F1;</div>
+    <p>请将手机旋转为<strong>竖屏</strong>模式<br>进行实验</p>
+  </div>
+
+  <!-- ============================================================
+       Page 1: 欢迎页
+       ============================================================ -->
+  <div class="page active" id="page-welcome">
+    <div class="logo">&#x1F4F1;</div>
+    <h1>移动端按钮点击实验</h1>
+    <p>
+      本实验旨在测试移动设备上不同按钮大小和间距<br>
+      对点击效率和误触率的影响。
+    </p>
+    <div class="notice-box">
+      &#x23F0; 预计耗时：<strong>15–20 分钟</strong><br>
+      正式实验共 9 组条件，每组 12 次点击<br>
+      全程请在安静环境下使用<strong>竖屏</strong>操作
+    </div>
+    <div class="consent-area">
+      <input type="checkbox" id="consent-check">
+      <label for="consent-check">我已阅读以上说明，同意参与本实验</label>
+    </div>
+    <button class="btn btn-primary" id="btn-start" disabled>开始实验</button>
+  </div>
+
+  <!-- ============================================================
+       Page 2: 被试登记
+       ============================================================ -->
+  <div class="page" id="page-register">
+    <h1>被试信息登记</h1>
+    <div class="form-group">
+      <label>被试编号</label>
+      <input type="text" id="reg-id" placeholder="请输入你的编号（如 S01）" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label>年龄</label>
+      <input type="number" id="reg-age" placeholder="请输入年龄" min="10" max="99">
+    </div>
+    <div class="form-group">
+      <label>性别</label>
+      <div class="radio-group">
+        <label><input type="radio" name="gender" value="male"> 男</label>
+        <label><input type="radio" name="gender" value="female"> 女</label>
+        <label><input type="radio" name="gender" value="other"> 其他</label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>惯用手</label>
+      <div class="radio-group">
+        <label><input type="radio" name="hand" value="right"> 右利手</label>
+        <label><input type="radio" name="hand" value="left"> 左利手</label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>是否有色盲或色弱？</label>
+      <div class="radio-group">
+        <label><input type="radio" name="colorblind" value="no"> 否</label>
+        <label><input type="radio" name="colorblind" value="yes"> 是</label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>每日手机使用时长</label>
+      <select id="reg-usage">
+        <option value="">请选择...</option>
+        <option value="<1">&lt; 1 小时</option>
+        <option value="1-3">1–3 小时</option>
+        <option value="3-6">3–6 小时</option>
+        <option value=">6">&gt; 6 小时</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" id="btn-register">确认并开始实验</button>
+  </div>
+
+  <!-- ============================================================
+       Page 3: 实验页面（核心）
+       ============================================================ -->
+  <div class="page" id="page-experiment">
+    <div class="exp-header">
+      <span id="exp-phase-label">练习阶段</span>
+      <span id="exp-trial-progress">0 / 0</span>
+    </div>
+    <div class="exp-area" id="exp-area">
+      <!-- 动态渲染：起始十字 / 按钮网格 / 反馈文字 -->
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Page 4: NASA-TLX 问卷
+       ============================================================ -->
+  <div class="page" id="page-tlx">
+    <h1 style="font-size:18px;margin-bottom:16px;">主观负荷评估</h1>
+    <p style="font-size:13px;">请根据刚刚完成的一组操作，在每条 1–20 的标尺上选择最符合你感受的数值。</p>
+
+    <div id="tlx-sliders">
+      <div class="tlx-slider-group">
+        <div class="tlx-label"><span>脑力需求</span><span>低</span></div>
+        <div class="tlx-value" id="tlx-val-mental">10</div>
+        <input type="range" min="1" max="20" value="10" step="1"
+               data-tlx-key="mentalDemand" data-tlx-label="脑力需求">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;">
+          <span>非常低</span><span>非常高</span>
+        </div>
+      </div>
+
+      <div class="tlx-slider-group">
+        <div class="tlx-label"><span>体力需求</span><span>低</span></div>
+        <div class="tlx-value" id="tlx-val-physical">10</div>
+        <input type="range" min="1" max="20" value="10" step="1"
+               data-tlx-key="physicalDemand" data-tlx-label="体力需求">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;">
+          <span>非常低</span><span>非常高</span>
+        </div>
+      </div>
+
+      <div class="tlx-slider-group">
+        <div class="tlx-label"><span>时间需求</span><span>低</span></div>
+        <div class="tlx-value" id="tlx-val-temporal">10</div>
+        <input type="range" min="1" max="20" value="10" step="1"
+               data-tlx-key="temporalDemand" data-tlx-label="时间需求">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;">
+          <span>非常低</span><span>非常高</span>
+        </div>
+      </div>
+
+      <div class="tlx-slider-group">
+        <div class="tlx-label"><span>绩效</span><span>好</span></div>
+        <div class="tlx-value" id="tlx-val-performance">10</div>
+        <input type="range" min="1" max="20" value="10" step="1"
+               data-tlx-key="performance" data-tlx-label="绩效">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;">
+          <span>完美</span><span>失败</span>
+        </div>
+      </div>
+
+      <div class="tlx-slider-group">
+        <div class="tlx-label"><span>努力程度</span><span>低</span></div>
+        <div class="tlx-value" id="tlx-val-effort">10</div>
+        <input type="range" min="1" max="20" value="10" step="1"
+               data-tlx-key="effort" data-tlx-label="努力程度">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;">
+          <span>非常低</span><span>非常高</span>
+        </div>
+      </div>
+
+      <div class="tlx-slider-group">
+        <div class="tlx-label"><span>挫折感</span><span>低</span></div>
+        <div class="tlx-value" id="tlx-val-frustration">10</div>
+        <input type="range" min="1" max="20" value="10" step="1"
+               data-tlx-key="frustration" data-tlx-label="挫折感">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;">
+          <span>非常低</span><span>非常高</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-success" id="btn-tlx-submit">提交并继续</button>
+  </div>
+
+  <!-- ============================================================
+       Page 5: 休息页（条件之间）
+       ============================================================ -->
+  <div class="page" id="page-break">
+    <h1 style="font-size:20px;">&#x1F3C3; 完成一组！</h1>
+    <p id="break-message">准备进入下一组条件。</p>
+    <div class="break-progress-bar">
+      <div class="fill" id="break-progress-fill" style="width:0%;"></div>
+    </div>
+    <p style="font-size:13px;color:#666;" id="break-progress-text">完成 0 / 9 组</p>
+    <button class="btn btn-primary" id="btn-break-continue">继续</button>
+  </div>
+
+  <!-- ============================================================
+       Page 6: 完成页
+       ============================================================ -->
+  <div class="page" id="page-complete">
+    <h1>&#x2705; 实验完成！</h1>
+    <p>感谢你的参与！请点击下方按钮导出数据。</p>
+    <div class="export-area">
+      <button class="btn btn-success" id="btn-export-csv">&#x1F4E5; 导出 CSV 数据</button>
+      <button class="btn btn-warning" id="btn-reset">重新开始（清空数据）</button>
+    </div>
+    <p style="font-size:12px;color:#999;margin-top:8px;">
+      导出的 CSV 文件将保存在你的手机下载目录中，<br>
+      请将其发送给实验人员。
+    </p>
+  </div>
+
+  <!-- ============================================================
+       JavaScript
+       ============================================================ -->
+  <script>
+    'use strict';
+
+    /* ==========================================================
+       1. ⚙️ 实验配置
+       ========================================================== */
+    const CONFIG = {
+      // 按钮大小 (dp) — 在 Android 手机上 1dp ≈ 1CSSpx
+      buttonSizes: [
+        { key: 'small',  dp: 40,  css: 40,  label: '小(40dp)' },
+        { key: 'medium', dp: 60,  css: 60,  label: '中(60dp)' },
+        { key: 'large',  dp: 80,  css: 80,  label: '大(80dp)' }
+      ],
+      // 按钮间距 (dp)
+      spacings: [
+        { key: 'tight',    dp: 5,  css: 5,  label: '紧凑(5dp)' },
+        { key: 'moderate', dp: 15, css: 15, label: '适中(15dp)' },
+        { key: 'loose',    dp: 30, css: 30, label: '宽松(30dp)' }
+      ],
+      // 实验参数
+      practiceTrials: 5,        // 练习试次（只用 medium/moderate 条件）
+      formalTrialsPerCondition: 12,  // 正式实验每种条件试次数
+      timeoutMs: 8000,          // 超时时间 (ms)
+      preStimulusDelayMs: 500,  // 点击起始十字后到按钮呈现的延迟
+      hitFeedbackMs: 80,        // 命中反馈闪烁时长
+      interTrialMs: 300,        // 试次间空白间隔
+
+      // 颜色
+      colors: {
+        target:     '#FF4444',
+        distractor: '#CCCCCC',
+        startCross:'#333333',
+        hitOk:      '#44FF44',
+        hitError:   '#FF3B30',
+        bg:         '#F5F5F5'
+      },
+
+      // 每种条件下的网格配置 [rows, cols]
+      // [size][spacing]
+      gridLayout: {
+        small:  { tight: [4,4], moderate: [4,3], loose: [3,3] },
+        medium: { tight: [3,3], moderate: [3,3], loose: [3,3] },
+        large:  { tight: [3,3], moderate: [3,3], loose: [3,3] }
+      }
+    };
+
+    /* ==========================================================
+       2. 🗄️ IndexedDB 封装
+       ========================================================== */
+    const DB = {
+      _db: null,
+      _ready: false,
+
+      async open() {
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.open('ButtonExpDB', 1);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('participant')) {
+              db.createObjectStore('participant', { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains('trials')) {
+              const store = db.createObjectStore('trials', { keyPath: 'id', autoIncrement: true });
+              store.createIndex('participantId', 'participantId', { unique: false });
+              store.createIndex('conditionIndex', 'conditionIndex', { unique: false });
+            }
+            if (!db.objectStoreNames.contains('tlx')) {
+              const store = db.createObjectStore('tlx', { keyPath: 'id', autoIncrement: true });
+              store.createIndex('participantId', 'participantId', { unique: false });
+            }
+            if (!db.objectStoreNames.contains('state')) {
+              db.createObjectStore('state', { keyPath: 'key' });
+            }
+          };
+          req.onsuccess = (e) => {
+            this._db = e.target.result;
+            this._ready = true;
+            resolve();
+          };
+          req.onerror = (e) => reject(e.target.error);
+        });
+      },
+
+      _ensureOpen() {
+        if (!this._ready) throw new Error('DB not opened');
+      },
+
+      // 被试信息
+      async saveParticipant(data) {
+        this._ensureOpen();
+        const tx = this._db.transaction('participant', 'readwrite');
+        tx.objectStore('participant').put({ id: 'main', ...data });
+        return new Promise(r => { tx.oncomplete = r; });
+      },
+
+      async getParticipant() {
+        this._ensureOpen();
+        const tx = this._db.transaction('participant', 'readonly');
+        const store = tx.objectStore('participant');
+        return new Promise(r => {
+          const req = store.get('main');
+          req.onsuccess = () => r(req.result || null);
+          req.onerror = () => r(null);
+        });
+      },
+
+      // 试次数据
+      async saveTrial(data) {
+        this._ensureOpen();
+        const tx = this._db.transaction('trials', 'readwrite');
+        tx.objectStore('trials').add(data);
+        return new Promise(r => { tx.oncomplete = r; });
+      },
+
+      async getAllTrials() {
+        this._ensureOpen();
+        const tx = this._db.transaction('trials', 'readonly');
+        const store = tx.objectStore('trials');
+        return new Promise(r => {
+          const req = store.getAll();
+          req.onsuccess = () => r(req.result || []);
+          req.onerror = () => r([]);
+        });
+      },
+
+      // TLX
+      async saveTLX(data) {
+        this._ensureOpen();
+        const tx = this._db.transaction('tlx', 'readwrite');
+        tx.objectStore('tlx').add(data);
+        return new Promise(r => { tx.oncomplete = r; });
+      },
+
+      async getAllTLX() {
+        this._ensureOpen();
+        const tx = this._db.transaction('tlx', 'readonly');
+        const store = tx.objectStore('tlx');
+        return new Promise(r => {
+          const req = store.getAll();
+          req.onsuccess = () => r(req.result || []);
+          req.onerror = () => r([]);
+        });
+      },
+
+      // 状态（断点续传）
+      async saveState(data) {
+        this._ensureOpen();
+        const tx = this._db.transaction('state', 'readwrite');
+        tx.objectStore('state').put({ key: 'state', ...data });
+        return new Promise(r => { tx.oncomplete = r; });
+      },
+
+      async getState() {
+        this._ensureOpen();
+        const tx = this._db.transaction('state', 'readonly');
+        return new Promise(r => {
+          const req = tx.objectStore('state').get('state');
+          req.onsuccess = () => r(req.result || null);
+          req.onerror = () => r(null);
+        });
+      },
+
+      async clearState() {
+        this._ensureOpen();
+        const tx = this._db.transaction('state', 'readwrite');
+        tx.objectStore('state').delete('state');
+        return new Promise(r => { tx.oncomplete = r; });
+      },
+
+      // 重置全部数据
+      async resetAll() {
+        this._ensureOpen();
+        const names = ['participant', 'trials', 'tlx', 'state'];
+        const tx = this._db.transaction(names, 'readwrite');
+        names.forEach(n => tx.objectStore(n).clear());
+        return new Promise(r => { tx.oncomplete = r; });
+      }
+    };
+
+    /* ==========================================================
+       3. 🧭 页面路由
+       ========================================================== */
+    const PAGES = {};
+
+    function initPages() {
+      document.querySelectorAll('.page').forEach(el => {
+        PAGES[el.id] = el;
+      });
+    }
+
+    function showPage(id) {
+      Object.values(PAGES).forEach(p => p.classList.remove('active'));
+      PAGES[id].classList.add('active');
+    }
+
+    /* ==========================================================
+       4. 🎮 实验核心控制器
+       ========================================================== */
+    const EXP = {
+      // ---- 状态 ----
+      participantId: null,
+      isPractice: true,
+      conditionOrder: [],   // 打乱后的 9 个条件索引
+      currentConditionIdx: 0,  // conditionOrder 中的位置
+      currentTrial: 1,
+      totalTrialsThisCondition: CONFIG.formalTrialsPerCondition,
+      isRunning: false,
+      trialStartTime: 0,
+      stimulusOnsetTime: 0,
+      areaEl: null,
+      abortController: null,
+
+      // ---- 辅助: 生成 9 个条件 ----
+      _generateConditions() {
+        const conds = [];
+        for (let si = 0; si < CONFIG.buttonSizes.length; si++) {
+          for (let spi = 0; spi < CONFIG.spacings.length; spi++) {
+            conds.push({
+              index: conds.length,
+              sizeIdx: si,
+              spacingIdx: spi,
+              sizeKey: CONFIG.buttonSizes[si].key,
+              spacingKey: CONFIG.spacings[spi].key,
+              sizeLabel: CONFIG.buttonSizes[si].label,
+              spacingLabel: CONFIG.spacings[spi].label,
+              sizeCss: CONFIG.buttonSizes[si].css,
+              spacingCss: CONFIG.spacings[spi].css
+            });
+          }
+        }
+        return conds;
+      },
+
+      // ---- 打乱顺序 (Fisher-Yates) ----
+      _shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      },
+
+      // ---- 获取当前条件的配置 ----
+      _currentCondition() {
+        return this.conditions[this.conditionOrder[this.currentConditionIdx]];
+      },
+
+      // ---- 获取网格行列数 ----
+      _gridRowsCols(cond) {
+        const layout = CONFIG.gridLayout[cond.sizeKey];
+        return layout ? layout[cond.spacingKey] || [3,3] : [3,3];
+      },
+
+      // ==========================================================
+      //  开始实验
+      // ==========================================================
+      async start(participantId) {
+        this.participantId = participantId;
+        this.conditions = this._generateConditions();
+        this.conditionOrder = this._shuffle([0,1,2,3,4,5,6,7,8]);
+        this.currentConditionIdx = 0;
+        this.currentTrial = 1;
+        this.areaEl = document.getElementById('exp-area');
+
+        // 保存初始状态
+        await this._saveSessionState();
+
+        // 先进入练习
+        this.isPractice = true;
+        this.totalTrialsThisCondition = CONFIG.practiceTrials;
+        await this._runCondition();
+      },
+
+      // ---- 恢复中断 ----
+      async resume(state) {
+        this.participantId = state.participantId;
+        this.conditions = this._generateConditions();
+        this.conditionOrder = state.conditionOrder;
+        this.currentConditionIdx = state.currentConditionIdx;
+        this.currentTrial = state.currentTrial;
+        this.isPractice = state.isPractice;
+        this.areaEl = document.getElementById('exp-area');
+
+        this.totalTrialsThisCondition = this.isPractice
+          ? CONFIG.practiceTrials
+          : CONFIG.formalTrialsPerCondition;
+
+        await this._runCondition();
+      },
+
+      // ==========================================================
+      //  运行一组条件
+      // ==========================================================
+      async _runCondition() {
+        const cond = this._currentCondition();
+        const total = this.totalTrialsThisCondition;
+
+        // 更新 UI 状态栏
+        const phaseLabel = document.getElementById('exp-phase-label');
+        const trialProg = document.getElementById('exp-trial-progress');
+
+        if (this.isPractice) {
+          phaseLabel.textContent = '练习阶段';
+        } else {
+          phaseLabel.textContent =
+            `条件 ${this.currentConditionIdx + 1}/${this.conditionOrder.length}` +
+            ` · ${cond.sizeLabel} · ${cond.spacingLabel}`;
+        }
+        trialProg.textContent = `${this.currentTrial} / ${total}`;
+
+        // 进入 fullscreen
+        this._tryFullscreen();
+
+        showPage('page-experiment');
+        this.isRunning = true;
+
+        // 试次循环
+        while (this.currentTrial <= total) {
+          if (!this.isRunning) break;
+          await this._runSingleTrial(cond);
+          if (!this.isRunning) break;
+          this.currentTrial++;
+          await this._sleep(CONFIG.interTrialMs);
+
+          // 更新进度
+          trialProg.textContent =
+            `${Math.min(this.currentTrial, total)} / ${total}`;
+          await this._saveSessionState();
+        }
+
+        // 一组条件完成
+        if (!this.isRunning) return;
+
+        // 如果不是练习模式，记录 TLX
+        if (!this.isPractice) {
+          await this._showTLX();
+        }
+
+        // 移动到下一个条件
+        this.currentConditionIdx++;
+        this.currentTrial = 1;
+        await this._saveSessionState();
+
+        // 检查是否所有条件已完成
+        if (this.currentConditionIdx >= this.conditionOrder.length) {
+          if (this.isPractice) {
+            // 练习完成 → 进入正式实验
+            this.isPractice = false;
+            this.totalTrialsPerCondition = CONFIG.formalTrialsPerCondition;
+            this.currentConditionIdx = 0;
+            this.currentTrial = 1;
+            await this._saveSessionState();
+            // 跳过休息，直接开始
+            await this._runCondition();
+          } else {
+            // 全部完成
+            // 如果是正式实验最后一组，TLX 已经在上面填过了
+            await this._finish();
+          }
+        } else {
+          // 显示休息页
+          if (!this.isPractice) {
+            this._showBreak();
+          } else {
+            await this._runCondition();
+          }
+        }
+      },
+
+      // ==========================================================
+      //  单个试次
+      // ==========================================================
+      async _runSingleTrial(cond) {
+        const area = this.areaEl;
+
+        // Step 1: 显示起始十字
+        area.innerHTML = '<div class="start-cross" id="start-cross"></div>';
+        const cross = document.getElementById('start-cross');
+
+        // 等待起始十字被点击
+        await new Promise((resolve) => {
+          const handler = (e) => {
+            e.preventDefault();
+            cross.removeEventListener('touchstart', handler);
+            resolve();
+          };
+          cross.addEventListener('touchstart', handler, { passive: false });
+          // 也支持鼠标点击（用于调试）
+          cross.addEventListener('click', () => {
+            resolve();
+          }, { once: true });
+        });
+
+        // 清除十字
+        area.innerHTML = '';
+
+        // Step 2: 前刺激延迟 500ms
+        await this._sleep(CONFIG.preStimulusDelayMs);
+
+        // Step 3: 生成按钮网格
+        const [rows, cols] = this._gridRowsCols(cond);
+        const btnSize = cond.sizeCss;
+        const gap = cond.spacingCss;
+        const totalBtns = rows * cols;
+        const targetIdx = Math.floor(Math.random() * totalBtns);
+
+        // 计算网格总尺寸
+        const gridW = cols * btnSize + (cols - 1) * gap;
+        const gridH = rows * btnSize + (rows - 1) * gap;
+
+        // 构建按钮
+        const grid = document.createElement('div');
+        grid.className = 'button-grid';
+        grid.style.gridTemplateColumns = `repeat(${cols}, ${btnSize}px)`;
+        grid.style.gridTemplateRows = `repeat(${rows}, ${btnSize}px)`;
+        grid.style.gap = `${gap}px`;
+
+        const btns = [];
+        for (let i = 0; i < totalBtns; i++) {
+          const btn = document.createElement('div');
+          btn.className = 'grid-btn';
+          btn.style.width = `${btnSize}px`;
+          btn.style.height = `${btnSize}px`;
+          btn.style.borderRadius = '4px';
+          btn.style.background = i === targetIdx ? CONFIG.colors.target : CONFIG.colors.distractor;
+          btn.dataset.idx = i;
+          btn.dataset.isTarget = i === targetIdx ? 'true' : 'false';
+          grid.appendChild(btn);
+          btns.push(btn);
+        }
+        area.appendChild(grid);
+
+        // Step 4: 记录按钮呈现时间
+        this.stimulusOnsetTime = performance.now();
+        let responded = false;
+
+        // Step 5: 等待点击 / 超时
+        const result = await new Promise((resolve) => {
+          const timer = setTimeout(() => {
+            if (!responded) {
+              responded = true;
+              resolve({ type: 'timeout' });
+            }
+          }, CONFIG.timeoutMs);
+
+          const touchHandler = (e) => {
+            if (responded) return;
+            e.preventDefault();
+            const touch = e.changedTouches[0] || e.touches[0];
+            // 使用 document.elementFromPoint 判断点击在哪个按钮上
+            // 但 touch 事件时，点击点可能在两个按钮之间
+            // 更可靠：比较坐标与各按钮的位置
+            const clickX = touch.clientX;
+            const clickY = touch.clientY;
+
+            // 检查是否点击在某个按钮上
+            let hitBtn = null;
+            for (const btn of btns) {
+              const rect = btn.getBoundingClientRect();
+              if (clickX >= rect.left && clickX <= rect.right &&
+                  clickY >= rect.top && clickY <= rect.bottom) {
+                hitBtn = btn;
+                break;
+              }
+            }
+
+            const rt = performance.now() - this.stimulusOnsetTime;
+            responded = true;
+            clearTimeout(timer);
+
+            if (hitBtn) {
+              const isTarget = hitBtn.dataset.isTarget === 'true';
+              resolve({
+                type: 'click',
+                isTarget,
+                rt,
+                targetIdx,
+                clickIdx: parseInt(hitBtn.dataset.idx),
+                clickX,
+                clickY
+              });
+            } else {
+              // 点击在空白区域——忽略，不结束试次
+              responded = false;
+            }
+          };
+
+          // 用全局 touchstart 捕获
+          const touchListener = (e) => touchHandler(e);
+          document.addEventListener('touchstart', touchListener, { passive: false });
+
+          // 同时保存引用以便清理
+          this._currentTouchListener = touchListener;
+        });
+
+        // 清理事件监听
+        if (this._currentTouchListener) {
+          document.removeEventListener('touchstart', this._currentTouchListener, { passive: false });
+          this._currentTouchListener = null;
+        }
+
+        // Step 6: 处理结果
+        const now = performance.now();
+        const rt = result.type === 'click' ? result.rt : CONFIG.timeoutMs;
+
+        // 视觉反馈
+        if (result.type === 'timeout') {
+          area.innerHTML += '<div class="timeout-msg">超时</div>';
+          await this._sleep(500);
+        } else if (result.isTarget) {
+          // 命中：绿色闪烁
+          btns[result.clickIdx].style.background = CONFIG.colors.hitOk;
+          await this._sleep(CONFIG.hitFeedbackMs);
+        } else {
+          // 误触：红色闪烁
+          btns[result.clickIdx].style.background = CONFIG.colors.hitError;
+          await this._sleep(CONFIG.hitFeedbackMs);
+        }
+
+        // 清除所有按钮
+        area.innerHTML = '';
+
+        // Step 7: 记录到数据库
+        const trialData = {
+          participantId: this.participantId,
+          conditionIndex: this._currentCondition().index,
+          conditionOrderPosition: this.currentConditionIdx,
+          isPractice: this.isPractice,
+          trialNumber: this.currentTrial,
+          buttonSizeDp: cond.sizeCss,
+          buttonSpacingDp: cond.spacingCss,
+          gridRows: rows,
+          gridCols: cols,
+          totalButtons: totalBtns,
+          targetPositionIdx: targetIdx,
+          hitPositionIdx: result.type === 'click' ? result.clickIdx : -1,
+          isHit: result.type === 'click' && result.isTarget,
+          isError: result.type === 'click' && !result.isTarget,
+          isTimeout: result.type === 'timeout',
+          responseTimeMs: Math.round(rt),
+          clickX: result.type === 'click' ? result.clickX : null,
+          clickY: result.type === 'click' ? result.clickY : null,
+          deviceTimestamp: new Date().toISOString()
+        };
+
+        await DB.saveTrial(trialData);
+
+        // 如果是练习模式的最后几次，显示练习结束提示
+        if (this.isPractice && this.currentTrial >= CONFIG.practiceTrials) {
+          // 在进入下一条件前短暂显示提示
+        }
+      },
+
+      // ---- 显示 TLX 问卷 ----
+      async _showTLX() {
+        // 重置所有滑块到中间值
+        document.querySelectorAll('#tlx-sliders input[type="range"]').forEach(input => {
+          input.value = 10;
+          const valEl = document.getElementById(`tlx-val-${input.dataset.tlxKey.replace('Demand','').replace('performance','performance').replace('effort','effort').replace('frustration','frustration')}`);
+          // 简化 ID 映射
+          const keyMap = {
+            mentalDemand: 'tlx-val-mental',
+            physicalDemand: 'tlx-val-physical',
+            temporalDemand: 'tlx-val-temporal',
+            performance: 'tlx-val-performance',
+            effort: 'tlx-val-effort',
+            frustration: 'tlx-val-frustration'
+          };
+          const el = document.getElementById(keyMap[input.dataset.tlxKey]);
+          if (el) el.textContent = '10';
+        });
+
+        showPage('page-tlx');
+
+        return new Promise((resolve) => {
+          const handler = async () => {
+            document.getElementById('btn-tlx-submit').removeEventListener('click', handler);
+            // 收集数据
+            const values = {};
+            document.querySelectorAll('#tlx-sliders input[type="range"]').forEach(input => {
+              values[input.dataset.tlxKey] = parseInt(input.value);
+            });
+            const cond = this._currentCondition();
+            await DB.saveTLX({
+              participantId: this.participantId,
+              conditionIndex: cond ? cond.index : -1,
+              conditionOrderPosition: this.currentConditionIdx,
+              ...values,
+              deviceTimestamp: new Date().toISOString()
+            });
+            resolve();
+          };
+          document.getElementById('btn-tlx-submit').addEventListener('click', handler);
+        });
+      },
+
+      // ---- 休息页 ----
+      _showBreak() {
+        const done = this.currentConditionIdx; // 已完成的条件数（因为还没递增到下一个）
+        const total = this.conditionOrder.length;
+        document.getElementById('break-message').textContent =
+          `已完成 ${done}/${total} 组条件，休息一下准备继续。`;
+        document.getElementById('break-progress-fill').style.width = `${(done/total)*100}%`;
+        document.getElementById('break-progress-text').textContent =
+          `完成 ${done} / ${total} 组`;
+        showPage('page-break');
+
+        // 点击继续按钮时开始下一组
+        const btn = document.getElementById('btn-break-continue');
+        const handler = async () => {
+          btn.removeEventListener('click', handler);
+          await this._runCondition();
+        };
+        btn.addEventListener('click', handler);
+      },
+
+      // ---- 全部完成 ----
+      async _finish() {
+        await DB.clearState();
+        showPage('page-complete');
+        // 退出全屏
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        }
+      },
+
+      // ---- 尝试全屏 ----
+      _tryFullscreen() {
+        try {
+          const el = document.documentElement;
+          if (el.requestFullscreen) {
+            el.requestFullscreen();
+          } else if (el.webkitRequestFullscreen) {
+            el.webkitRequestFullscreen();
+          }
+        } catch (e) {
+          // 静默失败，非全屏也能做实验
+        }
+      },
+
+      // ---- 工具 ----
+      _sleep(ms) {
+        return new Promise(r => setTimeout(r, ms));
+      },
+
+      async _saveSessionState() {
+        const cond = this._currentCondition();
+        await DB.saveState({
+          participantId: this.participantId,
+          isPractice: this.isPractice,
+          conditionOrder: this.conditionOrder,
+          currentConditionIdx: this.currentConditionIdx,
+          currentTrial: this.currentTrial,
+          savedAt: new Date().toISOString()
+        });
+      }
+    };
+
+    /* ==========================================================
+       5. 📤 数据导出 (CSV)
+       ========================================================== */
+    function escapeCSV(val) {
+      if (val === null || val === undefined) return '';
+      const str = String(val);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return '"' + str.replace(/"/g, '""') + '"';
+      }
+      return str;
+    }
+
+    function objectToCSV(obj) {
+      const headers = Object.keys(obj);
+      const values = headers.map(h => escapeCSV(obj[h]));
+      return values.join(',');
+    }
+
+    async function exportCSV() {
+      const trials = await DB.getAllTrials();
+      const tlx = await DB.getAllTLX();
+
+      if (trials.length === 0) {
+        alert('没有数据可导出。');
+        return;
+      }
+
+      // 试次数据 CSV
+      const trialHeaders = [
+        'participantId','conditionIndex','conditionOrderPosition',
+        'isPractice','trialNumber',
+        'buttonSizeDp','buttonSpacingDp',
+        'gridRows','gridCols','totalButtons',
+        'targetPositionIdx','hitPositionIdx',
+        'isHit','isError','isTimeout',
+        'responseTimeMs','clickX','clickY',
+        'deviceTimestamp'
+      ];
+
+      let csv = '﻿'; // BOM for Excel UTF-8
+      csv += trialHeaders.join(',') + '\n';
+      for (const t of trials) {
+        csv += trialHeaders.map(h => escapeCSV(t[h])).join(',') + '\n';
+      }
+
+      // TLX 数据 CSV
+      csv += '\n\n--- TLX DATA ---\n';
+      const tlxHeaders = [
+        'participantId','conditionIndex','conditionOrderPosition',
+        'mentalDemand','physicalDemand','temporalDemand',
+        'performance','effort','frustration',
+        'deviceTimestamp'
+      ];
+      csv += tlxHeaders.join(',') + '\n';
+      for (const t of tlx) {
+        csv += tlxHeaders.map(h => escapeCSV(t[h])).join(',') + '\n';
+      }
+
+      // 下载
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const pid = EXP.participantId || 'unknown';
+      a.href = url;
+      a.download = `button_exp_${pid}_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    /* ==========================================================
+       6. 🚀 初始化与事件绑定
+       ========================================================== */
+    document.addEventListener('DOMContentLoaded', async () => {
+      initPages();
+
+      // ---- 打开数据库 ----
+      try {
+        await DB.open();
+      } catch (e) {
+        alert('数据库打开失败，请使用现代浏览器（如 Chrome）重新尝试。');
+        return;
+      }
+
+      // ---- TLX 滑块实时数值显示 ----
+      const keyIdMap = {
+        mentalDemand: 'tlx-val-mental',
+        physicalDemand: 'tlx-val-physical',
+        temporalDemand: 'tlx-val-temporal',
+        performance: 'tlx-val-performance',
+        effort: 'tlx-val-effort',
+        frustration: 'tlx-val-frustration'
+      };
+      document.querySelectorAll('#tlx-sliders input[type="range"]').forEach(input => {
+        input.addEventListener('input', () => {
+          const el = document.getElementById(keyIdMap[input.dataset.tlxKey]);
+          if (el) el.textContent = input.value;
+        });
+      });
+
+      // ---- 知情同意 ----
+      const consentCheck = document.getElementById('consent-check');
+      const btnStart = document.getElementById('btn-start');
+
+      consentCheck.addEventListener('change', () => {
+        btnStart.disabled = !consentCheck.checked;
+      });
+
+      btnStart.addEventListener('click', () => {
+        showPage('page-register');
+      });
+
+      // ---- 被试登记 ----
+      document.getElementById('btn-register').addEventListener('click', async () => {
+        const pid = document.getElementById('reg-id').value.trim();
+        const age = document.getElementById('reg-age').value.trim();
+        const gender = document.querySelector('input[name="gender"]:checked');
+        const hand = document.querySelector('input[name="hand"]:checked');
+        const colorblind = document.querySelector('input[name="colorblind"]:checked');
+        const usage = document.getElementById('reg-usage').value;
+
+        // 必填校验
+        if (!pid) { alert('请输入被试编号'); return; }
+        if (!age || parseInt(age) < 10) { alert('请输入有效的年龄'); return; }
+        if (!gender) { alert('请选择性别'); return; }
+        if (!hand) { alert('请选择惯用手'); return; }
+        if (!colorblind) { alert('请选择是否有色盲/色弱'); return; }
+        if (colorblind.value === 'yes') {
+          alert('抱歉，本实验需要正常色觉，你无法参与本次实验。');
+          return;
+        }
+        if (!usage) { alert('请选择每日手机使用时长'); return; }
+
+        // 保存被试信息
+        await DB.saveParticipant({
+          participantId: pid,
+          age: parseInt(age),
+          gender: gender.value,
+          handedness: hand.value,
+          colorblind: colorblind.value,
+          dailyPhoneUsage: usage,
+          deviceInfo: {
+            userAgent: navigator.userAgent,
+            screenWidth: screen.width * (window.devicePixelRatio || 1),
+            screenHeight: screen.height * (window.devicePixelRatio || 1),
+            devicePixelRatio: window.devicePixelRatio || 1,
+            cssWidth: screen.width,
+            cssHeight: screen.height
+          },
+          startedAt: new Date().toISOString()
+        });
+
+        // 检查是否有未完成的实验
+        const savedState = await DB.getState();
+        if (savedState && savedState.participantId === pid) {
+          const resume = confirm(
+            `检测到 ${pid} 有未完成的实验（已完成 ${savedState.currentConditionIdx} 组条件），是否继续？\n点击"取消"重新开始。`
+          );
+          if (resume) {
+            EXP.participantId = pid;
+            await EXP.resume(savedState);
+            return;
+          } else {
+            await DB.resetAll();
+            await DB.saveParticipant({
+              participantId: pid,
+              age: parseInt(age),
+              gender: gender.value,
+              handedness: hand.value,
+              colorblind: colorblind.value,
+              dailyPhoneUsage: usage,
+              deviceInfo: {
+                userAgent: navigator.userAgent,
+                screenWidth: screen.width * (window.devicePixelRatio || 1),
+                screenHeight: screen.height * (window.devicePixelRatio || 1),
+                devicePixelRatio: window.devicePixelRatio || 1,
+                cssWidth: screen.width,
+                cssHeight: screen.height
+              },
+              startedAt: new Date().toISOString()
+            });
+          }
+        }
+
+        await EXP.start(pid);
+      });
+
+      // ---- 休息页继续按钮 ----
+      document.getElementById('btn-break-continue').addEventListener('click', () => {
+        // 实际逻辑在 EXP._showBreak 中绑定
+      });
+
+      // ---- 导出 CSV ----
+      document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
+
+      // ---- 重置数据 ----
+      document.getElementById('btn-reset').addEventListener('click', async () => {
+        if (confirm('确定要清空所有数据吗？此操作不可撤销。')) {
+          await DB.resetAll();
+          showPage('page-welcome');
+          consentCheck.checked = false;
+          btnStart.disabled = true;
+        }
+      });
+
+      // ---- 在实验页面上禁止浏览器返回手势 ----
+      window.addEventListener('popstate', (e) => {
+        if (document.getElementById('page-experiment').classList.contains('active') ||
+            document.getElementById('page-tlx').classList.contains('active')) {
+          // 防止后退
+          history.pushState(null, '', window.location.href);
+        }
+      });
+      history.pushState(null, '', window.location.href);
+    });
+  </script>
+</body>
+</html>
