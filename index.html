@@ -327,45 +327,125 @@
     }
 
     /* ============================================================
-       Page 4: NASA-TLX 问卷
+       Page 4: NASA-TLX 问卷 — 圆圈选择器
        ============================================================ */
-    .tlx-slider-group {
-      width: 100%;
-      max-width: 360px;
-      margin-bottom: 16px;
+    #page-tlx {
+      padding: 16px 16px 30px;
+      overflow-y: auto;
+      justify-content: flex-start;
     }
 
-    .tlx-slider-group .tlx-label {
+    #page-tlx h1 {
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+
+    .tlx-instruction {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .tlx-dimension {
+      width: 100%;
+      max-width: 380px;
+      margin-bottom: 20px;
+      padding: 12px 14px;
+      background: #FAFAFA;
+      border-radius: 10px;
+      border: 1px solid #EEE;
+    }
+
+    .tlx-header {
       display: flex;
       justify-content: space-between;
-      font-size: 14px;
-      margin-bottom: 2px;
+      align-items: center;
+      margin-bottom: 4px;
     }
 
-    .tlx-slider-group input[type="range"] {
-      width: 100%;
-      height: 6px;
-      -webkit-appearance: none;
-      appearance: none;
-      background: #DDD;
-      border-radius: 3px;
-      outline: none;
+    .tlx-header .tlx-name {
+      font-size: 15px;
+      font-weight: 600;
     }
 
-    .tlx-slider-group input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: #007AFF;
-      cursor: pointer;
-    }
-
-    .tlx-slider-group .tlx-value {
-      text-align: center;
+    .tlx-header .tlx-score {
       font-size: 18px;
       font-weight: 700;
       color: #007AFF;
+      min-width: 28px;
+      text-align: center;
+    }
+
+    .tlx-desc {
+      font-size: 12px;
+      color: #888;
+      line-height: 1.4;
+      margin-bottom: 10px;
+    }
+
+    .tlx-circle-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: 6px 0;
+    }
+
+    .tlx-end-label {
+      font-size: 10px;
+      color: #AAA;
+      white-space: nowrap;
+      width: 38px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .tlx-circles {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex: 1;
+      position: relative;
+      padding: 0 2px;
+    }
+
+    /* 连接线 */
+    .tlx-circles::before {
+      content: '';
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      top: 50%;
+      height: 2px;
+      background: #DDD;
+      transform: translateY(-50%);
+      z-index: 0;
+    }
+
+    .tlx-circle {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid #CCC;
+      background: #FFF;
+      position: relative;
+      z-index: 1;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .tlx-circle.selected {
+      background: #007AFF;
+      border-color: #007AFF;
+      transform: scale(1.15);
+      box-shadow: 0 1px 6px rgba(0,122,255,0.35);
+    }
+
+    .tlx-circle:active {
+      transform: scale(0.9);
     }
 
     /* ============================================================
@@ -548,67 +628,91 @@
        Page 4: NASA-TLX 问卷
        ============================================================ -->
   <div class="page" id="page-tlx">
-    <h1 style="font-size:18px;margin-bottom:16px;">主观负荷评估</h1>
-    <p style="font-size:13px;">请根据刚刚完成的一组操作，在每条 1–20 的标尺上选择最符合你感受的数值。</p>
+    <h1>主观负荷评估</h1>
+    <p class="tlx-instruction">根据刚完成的一组操作，点击圆圈选择最符合你感受的程度。</p>
 
-    <div id="tlx-sliders">
-      <div class="tlx-slider-group">
-        <div class="tlx-label"><span>脑力需求</span><span>低</span></div>
-        <div class="tlx-value" id="tlx-val-mental">10</div>
-        <input type="range" min="1" max="20" value="10" step="1"
-               data-tlx-key="mentalDemand" data-tlx-label="脑力需求">
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;">
-          <span>非常低</span><span>非常高</span>
+    <div id="tlx-container">
+      <!-- ======= 维度 1：脑力需求 ======= -->
+      <div class="tlx-dimension" data-tlx-key="mentalDemand">
+        <div class="tlx-header">
+          <span class="tlx-name">① 脑力需求</span>
+          <span class="tlx-score" id="tlx-val-mental">10</span>
+        </div>
+        <p class="tlx-desc">需要投入多少注意力和脑力思考来完成操作？<br>低分→几乎不需要动脑；高分→高度集中精神。</p>
+        <div class="tlx-circle-row">
+          <span class="tlx-end-label">非常低</span>
+          <div class="tlx-circles tlx-circles-mental"></div>
+          <span class="tlx-end-label">非常高</span>
         </div>
       </div>
 
-      <div class="tlx-slider-group">
-        <div class="tlx-label"><span>体力需求</span><span>低</span></div>
-        <div class="tlx-value" id="tlx-val-physical">10</div>
-        <input type="range" min="1" max="20" value="10" step="1"
-               data-tlx-key="physicalDemand" data-tlx-label="体力需求">
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;">
-          <span>非常低</span><span>非常高</span>
+      <!-- ======= 维度 2：体力需求 ======= -->
+      <div class="tlx-dimension" data-tlx-key="physicalDemand">
+        <div class="tlx-header">
+          <span class="tlx-name">② 体力需求</span>
+          <span class="tlx-score" id="tlx-val-physical">10</span>
+        </div>
+        <p class="tlx-desc">手指或手腕需要付出多少身体层面的努力？<br>低分→轻松不费力；高分→指尖需要精细控制。</p>
+        <div class="tlx-circle-row">
+          <span class="tlx-end-label">非常低</span>
+          <div class="tlx-circles tlx-circles-physical"></div>
+          <span class="tlx-end-label">非常高</span>
         </div>
       </div>
 
-      <div class="tlx-slider-group">
-        <div class="tlx-label"><span>时间需求</span><span>低</span></div>
-        <div class="tlx-value" id="tlx-val-temporal">10</div>
-        <input type="range" min="1" max="20" value="10" step="1"
-               data-tlx-key="temporalDemand" data-tlx-label="时间需求">
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;">
-          <span>非常低</span><span>非常高</span>
+      <!-- ======= 维度 3：时间需求 ======= -->
+      <div class="tlx-dimension" data-tlx-key="temporalDemand">
+        <div class="tlx-header">
+          <span class="tlx-name">③ 时间需求</span>
+          <span class="tlx-score" id="tlx-val-temporal">10</span>
+        </div>
+        <p class="tlx-desc">操作中感到多大时间紧迫感？<br>低分→从容不必赶；高分→觉得要快点按才行。</p>
+        <div class="tlx-circle-row">
+          <span class="tlx-end-label">非常低</span>
+          <div class="tlx-circles tlx-circles-temporal"></div>
+          <span class="tlx-end-label">非常高</span>
         </div>
       </div>
 
-      <div class="tlx-slider-group">
-        <div class="tlx-label"><span>绩效</span><span>好</span></div>
-        <div class="tlx-value" id="tlx-val-performance">10</div>
-        <input type="range" min="1" max="20" value="10" step="1"
-               data-tlx-key="performance" data-tlx-label="绩效">
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;">
-          <span>完美</span><span>失败</span>
+      <!-- ======= 维度 4：绩效 ======= -->
+      <div class="tlx-dimension" data-tlx-key="performance">
+        <div class="tlx-header">
+          <span class="tlx-name">④ 绩效</span>
+          <span class="tlx-score" id="tlx-val-performance">10</span>
+        </div>
+        <p class="tlx-desc">你对自己完成操作的评价如何？<br>低分→觉得自己做得很好；高分→觉得操作不理想。</p>
+        <div class="tlx-circle-row">
+          <span class="tlx-end-label">完美</span>
+          <div class="tlx-circles tlx-circles-performance"></div>
+          <span class="tlx-end-label">失败</span>
         </div>
       </div>
 
-      <div class="tlx-slider-group">
-        <div class="tlx-label"><span>努力程度</span><span>低</span></div>
-        <div class="tlx-value" id="tlx-val-effort">10</div>
-        <input type="range" min="1" max="20" value="10" step="1"
-               data-tlx-key="effort" data-tlx-label="努力程度">
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;">
-          <span>非常低</span><span>非常高</span>
+      <!-- ======= 维度 5：努力程度 ======= -->
+      <div class="tlx-dimension" data-tlx-key="effort">
+        <div class="tlx-header">
+          <span class="tlx-name">⑤ 努力程度</span>
+          <span class="tlx-score" id="tlx-val-effort">10</span>
+        </div>
+        <p class="tlx-desc">达到当前水平需要付出多大努力？<br>低分→轻松自如；高分→竭尽全力。</p>
+        <div class="tlx-circle-row">
+          <span class="tlx-end-label">非常低</span>
+          <div class="tlx-circles tlx-circles-effort"></div>
+          <span class="tlx-end-label">非常高</span>
         </div>
       </div>
 
-      <div class="tlx-slider-group">
-        <div class="tlx-label"><span>挫折感</span><span>低</span></div>
-        <div class="tlx-value" id="tlx-val-frustration">10</div>
-        <input type="range" min="1" max="20" value="10" step="1"
-               data-tlx-key="frustration" data-tlx-label="挫折感">
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;">
-          <span>非常低</span><span>非常高</span>
+      <!-- ======= 维度 6：挫折感 ======= -->
+      <div class="tlx-dimension" data-tlx-key="frustration">
+        <div class="tlx-header">
+          <span class="tlx-name">⑥ 挫折感</span>
+          <span class="tlx-score" id="tlx-val-frustration">10</span>
+        </div>
+        <p class="tlx-desc">操作中感到多少烦躁或沮丧？<br>低分→平静愉快；高分→点不到目标让人烦躁。</p>
+        <div class="tlx-circle-row">
+          <span class="tlx-end-label">非常低</span>
+          <div class="tlx-circles tlx-circles-frustration"></div>
+          <span class="tlx-end-label">非常高</span>
         </div>
       </div>
     </div>
@@ -1203,12 +1307,15 @@
 
       // ---- 显示 TLX 问卷 ----
       async _showTLX() {
-        // 重置所有滑块到中间值
-        document.querySelectorAll('#tlx-sliders input[type="range"]').forEach(input => {
-          input.value = 10;
-          const valEl = document.getElementById(`tlx-val-${input.dataset.tlxKey.replace('Demand','').replace('performance','performance').replace('effort','effort').replace('frustration','frustration')}`);
-          // 简化 ID 映射
-          const keyMap = {
+        // 重置所有圆圈选择器到中间位置（第4个）
+        document.querySelectorAll('.tlx-dimension').forEach(dim => {
+          const circles = dim.querySelectorAll('.tlx-circle');
+          const key = dim.dataset.tlxKey;
+          circles.forEach(c => c.classList.remove('selected'));
+          // 默认选中第4个（中间）
+          circles[3].classList.add('selected');
+          // 更新得分显示
+          const idMap = {
             mentalDemand: 'tlx-val-mental',
             physicalDemand: 'tlx-val-physical',
             temporalDemand: 'tlx-val-temporal',
@@ -1216,8 +1323,8 @@
             effort: 'tlx-val-effort',
             frustration: 'tlx-val-frustration'
           };
-          const el = document.getElementById(keyMap[input.dataset.tlxKey]);
-          if (el) el.textContent = '10';
+          const valEl = document.getElementById(idMap[key]);
+          if (valEl) valEl.textContent = '10';
         });
 
         showPage('page-tlx');
@@ -1225,10 +1332,12 @@
         return new Promise((resolve) => {
           const handler = async () => {
             document.getElementById('btn-tlx-submit').removeEventListener('click', handler);
-            // 收集数据
+            // 从圆圈选择器收集数据
             const values = {};
-            document.querySelectorAll('#tlx-sliders input[type="range"]').forEach(input => {
-              values[input.dataset.tlxKey] = parseInt(input.value);
+            document.querySelectorAll('.tlx-dimension').forEach(dim => {
+              const key = dim.dataset.tlxKey;
+              const selected = dim.querySelector('.tlx-circle.selected');
+              values[key] = selected ? parseInt(selected.dataset.score) : 10;
             });
             const cond = this._currentCondition();
             await DB.saveTLX({
@@ -1391,8 +1500,9 @@
         return;
       }
 
-      // ---- TLX 滑块实时数值显示 ----
-      const keyIdMap = {
+      // ---- TLX 圆圈选择器初始化 ----
+      const TLX_SCORES = [1, 4, 7, 10, 13, 17, 20];
+      const TLX_ID_MAP = {
         mentalDemand: 'tlx-val-mental',
         physicalDemand: 'tlx-val-physical',
         temporalDemand: 'tlx-val-temporal',
@@ -1400,10 +1510,30 @@
         effort: 'tlx-val-effort',
         frustration: 'tlx-val-frustration'
       };
-      document.querySelectorAll('#tlx-sliders input[type="range"]').forEach(input => {
-        input.addEventListener('input', () => {
-          const el = document.getElementById(keyIdMap[input.dataset.tlxKey]);
-          if (el) el.textContent = input.value;
+
+      // 为每个维度动态生成 7 个圆圈
+      document.querySelectorAll('.tlx-circles').forEach(container => {
+        for (let i = 0; i < 7; i++) {
+          const circle = document.createElement('div');
+          circle.className = 'tlx-circle' + (i === 3 ? ' selected' : '');
+          circle.dataset.pos = (i + 1).toString();
+          circle.dataset.score = TLX_SCORES[i].toString();
+          container.appendChild(circle);
+        }
+      });
+
+      // 圆圈点击事件
+      document.querySelectorAll('.tlx-dimension').forEach(dim => {
+        dim.addEventListener('click', (e) => {
+          const circle = e.target.closest('.tlx-circle');
+          if (!circle) return;
+          // 取消同组其他圆圈选中
+          dim.querySelectorAll('.tlx-circle').forEach(c => c.classList.remove('selected'));
+          circle.classList.add('selected');
+          // 更新得分显示
+          const key = dim.dataset.tlxKey;
+          const valEl = document.getElementById(TLX_ID_MAP[key]);
+          if (valEl) valEl.textContent = circle.dataset.score;
         });
       });
 
