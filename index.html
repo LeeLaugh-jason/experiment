@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <meta name="color-scheme" content="light only">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>人机界面设计实验 — 移动端按钮点击实验</title>
   <style>
@@ -14,18 +15,30 @@
       box-sizing: border-box;
     }
 
+    /* 强制浅色模式，无视系统暗色主题 */
+    :root {
+      color-scheme: light !important;
+    }
+
     html, body {
       width: 100%;
       height: 100%;
       overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       font-size: 14px;
-      background: #F5F5F5;
-      color: #333;
+      background: #F5F5F5 !important;
+      color: #333 !important;
+      color-scheme: light !important;
       touch-action: none;
       -webkit-touch-callout: none;
       -webkit-user-select: none;
       user-select: none;
+    }
+
+    /* 强制所有页面容器使用浅色背景，无视浏览器暗色模式 */
+    .page {
+      background: #F5F5F5 !important;
+      color: #333 !important;
     }
 
     /* ============================================================
