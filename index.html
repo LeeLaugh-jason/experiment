@@ -1364,13 +1364,13 @@
 
       // ---- 显示 TLX 问卷 ----
       async _showTLX() {
-        // 重置所有圆圈选择器到中间位置（第4个）
+        // 重置所有圆圈选择器到中间位置（第3个）
         document.querySelectorAll('.tlx-dimension').forEach(dim => {
           const circles = dim.querySelectorAll('.tlx-circle');
           const key = dim.dataset.tlxKey;
           circles.forEach(c => c.classList.remove('selected'));
-          // 默认选中第4个（中间）
-          circles[3].classList.add('selected');
+          // 默认选中第3个（中间）
+          circles[2].classList.add('selected');
           // 更新得分显示
           const idMap = {
             mentalDemand: 'tlx-val-mental',
@@ -1558,7 +1558,7 @@
       }
 
       // ---- TLX 圆圈选择器初始化 ----
-      const TLX_SCORES = [1, 4, 7, 10, 13, 17, 20];
+      const TLX_SCORES = [1, 5, 10, 15, 20];
       const TLX_ID_MAP = {
         mentalDemand: 'tlx-val-mental',
         physicalDemand: 'tlx-val-physical',
@@ -1568,11 +1568,11 @@
         frustration: 'tlx-val-frustration'
       };
 
-      // 为每个维度动态生成 7 个圆圈
+      // 为每个维度动态生成 5 个圆圈
       document.querySelectorAll('.tlx-circles').forEach(container => {
-        for (let i = 0; i < 7; i++) {
+        for (let i = 0; i < 5; i++) {
           const circle = document.createElement('div');
-          circle.className = 'tlx-circle' + (i === 3 ? ' selected' : '');
+          circle.className = 'tlx-circle' + (i === 2 ? ' selected' : '');
           circle.dataset.pos = (i + 1).toString();
           circle.dataset.score = TLX_SCORES[i].toString();
           container.appendChild(circle);
