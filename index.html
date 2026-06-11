@@ -233,6 +233,50 @@
       position: relative;
     }
 
+    /* 阶段提示覆盖层（练习/正式切换时显示） */
+    .phase-overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(245,245,245,0.95);
+      z-index: 50;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .phase-overlay .phase-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .phase-overlay .phase-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .phase-overlay .phase-desc {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+
+    .phase-overlay .phase-detail {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 20px;
+    }
+
+    .phase-overlay .btn {
+      min-width: 140px;
+    }
+
     /* 起始十字 */
     .start-cross {
       width: 60px;
@@ -953,11 +997,10 @@
     const EXP = {
       // ---- 状态 ----
       participantId: null,
-      isPractice: true,
+      phase: 'none',         // 'none' | 'practice' | 'formal'
       conditionOrder: [],   // 打乱后的 9 个条件索引
       currentConditionIdx: 0,  // conditionOrder 中的位置
       currentTrial: 1,
-      totalTrialsThisCondition: CONFIG.formalTrialsPerCondition,
       isRunning: false,
       trialStartTime: 0,
       stimulusOnsetTime: 0,
@@ -1013,15 +1056,11 @@
         this.conditions = this._generateConditions();
         this.conditionOrder = this._shuffle([0,1,2,3,4,5,6,7,8]);
         this.currentConditionIdx = 0;
+        this.phase = 'none';
         this.currentTrial = 1;
         this.areaEl = document.getElementById('exp-area');
 
-        // 保存初始状态
         await this._saveSessionState();
-
-        // 先进入练习
-        this.isPractice = true;
-        this.totalTrialsThisCondition = CONFIG.practiceTrials;
         await this._runCondition();
       },
 
@@ -1031,94 +1070,117 @@
         this.conditions = this._generateConditions();
         this.conditionOrder = state.conditionOrder;
         this.currentConditionIdx = state.currentConditionIdx;
+        this.phase = state.phase || 'practice';
         this.currentTrial = state.currentTrial;
-        this.isPractice = state.isPractice;
         this.areaEl = document.getElementById('exp-area');
-
-        this.totalTrialsThisCondition = this.isPractice
-          ? CONFIG.practiceTrials
-          : CONFIG.formalTrialsPerCondition;
-
-        await this._runCondition();
+        await this._runCondition({ resumed: true });
       },
 
       // ==========================================================
-      //  运行一组条件
+      //  运行一个条件（包含练习 + 正式两个阶段）
       // ==========================================================
-      async _runCondition() {
+      async _runCondition(opts) {
         const cond = this._currentCondition();
-        const total = this.totalTrialsThisCondition;
-
-        // 更新 UI 状态栏
-        const phaseLabel = document.getElementById('exp-phase-label');
-        const trialProg = document.getElementById('exp-trial-progress');
-
-        if (this.isPractice) {
-          phaseLabel.textContent = '练习阶段';
-        } else {
-          phaseLabel.textContent =
-            `条件 ${this.currentConditionIdx + 1}/${this.conditionOrder.length}` +
-            ` · ${cond.sizeLabel} · ${cond.spacingLabel}`;
-        }
-        trialProg.textContent = `${this.currentTrial} / ${total}`;
-
-        // 进入 fullscreen
+        this.areaEl = document.getElementById('exp-area');
         this._tryFullscreen();
-
         showPage('page-experiment');
         this.isRunning = true;
 
-        // 试次循环
-        while (this.currentTrial <= total) {
+        // ── 阶段 1：练习（2 次） ──
+        if (this.phase === 'none' || this.phase === 'practice') {
+          this.phase = 'practice';
+          this.currentTrial = this.currentTrial || 1;
+          if (!opts?.resumed || this.currentTrial <= 1) {
+            await this._showPhasePrompt(cond, 'practice');
+          }
+          await this._runTrialBlock(cond, CONFIG.practiceTrials);
+
+          // 练习完成，切换到正式
+          this.phase = 'formal';
+          this.currentTrial = 1;
+          await this._saveSessionState();
+          await this._showPhasePrompt(cond, 'formal');
+        }
+
+        // ── 阶段 2：正式（10 次） ──
+        if (this.phase === 'formal') {
+          await this._runTrialBlock(cond, CONFIG.formalTrialsPerCondition);
+        }
+
+        // ── 条件完成 → TLX → 下一组 / 结束 ──
+        if (!this.isRunning) return;
+
+        await this._showTLX();
+
+        this.currentConditionIdx++;
+        this.phase = 'none';
+        this.currentTrial = 1;
+        await this._saveSessionState();
+
+        if (this.currentConditionIdx >= this.conditionOrder.length) {
+          await this._finish();
+        } else {
+          this._showBreak();
+        }
+      },
+
+      // ---- 运行一组试次循环（纯试次，无 TLX/休息逻辑） ----
+      async _runTrialBlock(cond, totalTrials) {
+        const phaseLabel = document.getElementById('exp-phase-label');
+        const trialProg = document.getElementById('exp-trial-progress');
+
+        while (this.currentTrial <= totalTrials) {
           if (!this.isRunning) break;
+
+          // 更新状态栏
+          if (this.phase === 'practice') {
+            phaseLabel.textContent = '✏️ 练习';
+          } else {
+            const idx = this.currentConditionIdx + 1;
+            const total = this.conditionOrder.length;
+            phaseLabel.textContent = `条件 ${idx}/${total} · ${cond.sizeLabel} · ${cond.spacingLabel}`;
+          }
+          trialProg.textContent = `${this.currentTrial} / ${totalTrials}`;
+
           await this._runSingleTrial(cond);
           if (!this.isRunning) break;
           this.currentTrial++;
           await this._sleep(CONFIG.interTrialMs);
 
-          // 更新进度
           trialProg.textContent =
-            `${Math.min(this.currentTrial, total)} / ${total}`;
+            `${Math.min(this.currentTrial, totalTrials)} / ${totalTrials}`;
           await this._saveSessionState();
         }
+      },
 
-        // 一组条件完成
-        if (!this.isRunning) return;
+      // ---- 显示阶段提示（练习/正式切换） ----
+      async _showPhasePrompt(cond, phase) {
+        const area = this.areaEl;
 
-        // 如果不是练习模式，记录 TLX
-        if (!this.isPractice) {
-          await this._showTLX();
-        }
+        const isPractice = phase === 'practice';
+        const title = isPractice ? '✏️ 练习阶段' : '🚀 正式实验';
+        const desc = isPractice
+          ? '先练习 2 次，熟悉当前条件的操作方式。'
+          : '正式实验开始！请在保证准确的前提下尽快点击。';
+        const detail = `按钮: ${cond.sizeLabel} · 间距: ${cond.spacingLabel}`;
+        const btnText = isPractice ? '开始练习' : '开始实验';
 
-        // 移动到下一个条件
-        this.currentConditionIdx++;
-        this.currentTrial = 1;
-        await this._saveSessionState();
+        area.innerHTML = `
+          <div class="phase-overlay">
+            <div class="phase-icon">${isPractice ? '✏️' : '🎯'}</div>
+            <div class="phase-title">${title}</div>
+            <div class="phase-desc">${desc}</div>
+            <div class="phase-detail">${detail}</div>
+            <button class="btn btn-primary" id="btn-phase-start">${btnText}</button>
+          </div>
+        `;
 
-        // 检查是否所有条件已完成
-        if (this.currentConditionIdx >= this.conditionOrder.length) {
-          if (this.isPractice) {
-            // 练习完成 → 进入正式实验
-            this.isPractice = false;
-            this.totalTrialsPerCondition = CONFIG.formalTrialsPerCondition;
-            this.currentConditionIdx = 0;
-            this.currentTrial = 1;
-            await this._saveSessionState();
-            // 跳过休息，直接开始
-            await this._runCondition();
-          } else {
-            // 全部完成
-            // 如果是正式实验最后一组，TLX 已经在上面填过了
-            await this._finish();
-          }
-        } else {
-          // 显示休息页
-          if (!this.isPractice) {
-            this._showBreak();
-          } else {
-            await this._runCondition();
-          }
-        }
+        return new Promise((resolve) => {
+          document.getElementById('btn-phase-start').addEventListener('click', () => {
+            area.innerHTML = '';
+            resolve();
+          }, { once: true });
+        });
       },
 
       // ==========================================================
@@ -1279,7 +1341,7 @@
           participantId: this.participantId,
           conditionIndex: this._currentCondition().index,
           conditionOrderPosition: this.currentConditionIdx,
-          isPractice: this.isPractice,
+          phase: this.phase,
           trialNumber: this.currentTrial,
           buttonSizeDp: cond.sizeCss,
           buttonSpacingDp: cond.spacingCss,
@@ -1298,11 +1360,6 @@
         };
 
         await DB.saveTrial(trialData);
-
-        // 如果是练习模式的最后几次，显示练习结束提示
-        if (this.isPractice && this.currentTrial >= CONFIG.practiceTrials) {
-          // 在进入下一条件前短暂显示提示
-        }
       },
 
       // ---- 显示 TLX 问卷 ----
@@ -1406,7 +1463,7 @@
         const cond = this._currentCondition();
         await DB.saveState({
           participantId: this.participantId,
-          isPractice: this.isPractice,
+          phase: this.phase,
           conditionOrder: this.conditionOrder,
           currentConditionIdx: this.currentConditionIdx,
           currentTrial: this.currentTrial,
@@ -1445,7 +1502,7 @@
       // 试次数据 CSV
       const trialHeaders = [
         'participantId','conditionIndex','conditionOrderPosition',
-        'isPractice','trialNumber',
+        'phase','trialNumber',
         'buttonSizeDp','buttonSpacingDp',
         'gridRows','gridCols','totalButtons',
         'targetPositionIdx','hitPositionIdx',
