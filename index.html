@@ -1,10 +1,15 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" style="background:#F5F5F5!important;color:#333!important">
 <head>
   <meta charset="UTF-8">
-  <meta name="color-scheme" content="light only">
+  <meta name="color-scheme" content="light">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>人机界面设计实验 — 移动端按钮点击实验</title>
+  <script>
+    // 必须在任何渲染之前执行，强制浏览器使用浅色背景
+    document.documentElement.style.setProperty('background', '#F5F5F5', 'important');
+    document.documentElement.style.setProperty('color', '#333333', 'important');
+  </script>
   <style>
     /* ============================================================
        全局重置
@@ -429,8 +434,24 @@
       padding-bottom: env(safe-area-inset-bottom, 0);
     }
   </style>
+  <script>
+    // 页面加载后再强制覆盖一次（针对 Via 等浏览器运行时注入暗色模式）
+    window.addEventListener('load', function() {
+      document.documentElement.style.setProperty('background', '#F5F5F5', 'important');
+      document.documentElement.style.setProperty('color', '#333333', 'important');
+      document.body.style.setProperty('background', '#F5F5F5', 'important');
+      document.body.style.setProperty('color', '#333333', 'important');
+    });
+    // DOMContentLoaded 时也覆盖一次（更早时机）
+    document.addEventListener('DOMContentLoaded', function() {
+      document.documentElement.style.setProperty('background', '#F5F5F5', 'important');
+      document.documentElement.style.setProperty('color', '#333333', 'important');
+      document.body.style.setProperty('background', '#F5F5F5', 'important');
+      document.body.style.setProperty('color', '#333333', 'important');
+    });
+  </script>
 </head>
-<body>
+<body style="background:#F5F5F5!important;color:#333!important">
 
   <!-- ============================================================
        横屏旋转提示
@@ -647,7 +668,7 @@
         { key: 'loose',    dp: 30, css: 30, label: '宽松(30dp)' }
       ],
       // 实验参数
-      practiceTrials: 3,        // 练习试次（熟悉操作用）
+      practiceTrials: 2,        // 练习试次（熟悉操作用）
       formalTrialsPerCondition: 10,  // 正式实验每种条件试次数
       timeoutMs: 8000,          // 超时时间 (ms)
       preStimulusDelayMs: 500,  // 点击起始十字后到按钮呈现的延迟
