@@ -1283,25 +1283,26 @@
               }
             }
 
-            const rt = performance.now() - this.stimulusOnsetTime;
+            if (!hitBtn) {
+              // 点击在空白区域（gap间隙）——忽略，不结束试次，保留定时器
+              return;
+            }
+
+            // 点中了某个按钮，清除定时器
             responded = true;
             clearTimeout(timer);
 
-            if (hitBtn) {
-              const isTarget = hitBtn.dataset.isTarget === 'true';
-              resolve({
-                type: 'click',
-                isTarget,
-                rt,
-                targetIdx,
-                clickIdx: parseInt(hitBtn.dataset.idx),
-                clickX,
-                clickY
-              });
-            } else {
-              // 点击在空白区域——忽略，不结束试次
-              responded = false;
-            }
+            const rt = performance.now() - this.stimulusOnsetTime;
+            const isTarget = hitBtn.dataset.isTarget === 'true';
+            resolve({
+              type: 'click',
+              isTarget,
+              rt,
+              targetIdx,
+              clickIdx: parseInt(hitBtn.dataset.idx),
+              clickX,
+              clickY
+            });
           };
 
           // 用全局 touchstart 捕获
