@@ -805,9 +805,9 @@
     const CONFIG = {
       // 按钮大小 (dp) — 在 Android 手机上 1dp ≈ 1CSSpx
       buttonSizes: [
-        { key: 'small',  dp: 40,  css: 40,  label: '小(40dp)' },
-        { key: 'medium', dp: 60,  css: 60,  label: '中(60dp)' },
-        { key: 'large',  dp: 80,  css: 80,  label: '大(80dp)' }
+        { key: 'small',  dp: 40,  css: 40,  label: '小(密集型)' },
+        { key: 'medium', dp: 60,  css: 60,  label: '中(标准型)' },
+        { key: 'large',  dp: 80,  css: 80,  label: '大(稀疏型)' }
       ],
       // 按钮间距 (dp)
       spacings: [
@@ -835,10 +835,12 @@
 
       // 每种条件下的网格配置 [rows, cols]
       // [size][spacing]
+      // 网格行列数 [rows, cols] — 铺满屏幕，按键个数随条件变化
+      // 按钮大小由可用屏幕空间 ÷ (cols, rows, gap) 动态算出
       gridLayout: {
-        small:  { tight: [6,5], moderate: [5,4], loose: [4,4] },
-        medium: { tight: [4,4], moderate: [4,3], loose: [3,3] },
-        large:  { tight: [3,4], moderate: [3,3], loose: [3,3] }
+        small:  { tight: [8,6], moderate: [6,5], loose: [5,4] },
+        medium: { tight: [6,5], moderate: [5,4], loose: [4,4] },
+        large:  { tight: [5,4], moderate: [4,4], loose: [3,3] }
       }
     };
 
@@ -1163,7 +1165,8 @@
           ? '先练习 2 次，熟悉当前条件的操作方式。'
           : '正式实验开始！请在保证准确的前提下尽快点击。';
         const timeoutSec = CONFIG.timeoutMs / 1000;
-        const detail = `按钮: ${cond.sizeLabel} · 间距: ${cond.spacingLabel}<br><span style="color:#FF3B30;">⏱ 超过 ${timeoutSec}s 未点击算超时</span>`;
+        const [r, c] = this._gridRowsCols(cond);
+        const detail = `按键: ${r}×${c}=${r*c}个 · 间距: ${cond.spacingLabel}<br><span style="color:#FF3B30;">⏱ 超过 ${timeoutSec}s 未点击算超时</span>`;
         const btnText = isPractice ? '开始练习' : '开始实验';
 
         area.innerHTML = `
@@ -1214,30 +1217,42 @@
         // Step 2: 前刺激延迟 500ms
         await this._sleep(CONFIG.preStimulusDelayMs);
 
-        // Step 3: 生成按钮网格
+        // Step 3: 生成按钮网格 — 动态计算尺寸铺满屏幕
         const [rows, cols] = this._gridRowsCols(cond);
-        const btnSize = cond.sizeCss;
         const gap = cond.spacingCss;
         const totalBtns = rows * cols;
         const targetIdx = Math.floor(Math.random() * totalBtns);
 
+        // 计算可用屏幕空间
+        const areaRect = area.getBoundingClientRect();
+        const pad = 12;
+        const availW = areaRect.width - pad * 2;
+        const availH = areaRect.height - pad * 2;
+
+        // 根据行列数和间距算出按钮尺寸，刚好填满可用区域
+        const btnSizeByW = (availW - (cols - 1) * gap) / cols;
+        const btnSizeByH = (availH - (rows - 1) * gap) / rows;
+        const btnSize = Math.floor(Math.min(btnSizeByW, btnSizeByH));
+        const realBtnSize = Math.max(btnSize, 20); // 最小 20px 防止太小
+        const realGap = gap;
+
         // 计算网格总尺寸
-        const gridW = cols * btnSize + (cols - 1) * gap;
-        const gridH = rows * btnSize + (rows - 1) * gap;
+        const gridW = cols * realBtnSize + (cols - 1) * realGap;
+        const gridH = rows * realBtnSize + (rows - 1) * realGap;
 
         // 构建按钮
         const grid = document.createElement('div');
         grid.className = 'button-grid';
-        grid.style.gridTemplateColumns = `repeat(${cols}, ${btnSize}px)`;
-        grid.style.gridTemplateRows = `repeat(${rows}, ${btnSize}px)`;
-        grid.style.gap = `${gap}px`;
+        grid.style.gridTemplateColumns = `repeat(${cols}, ${realBtnSize}px)`;
+        grid.style.gridTemplateRows = `repeat(${rows}, ${realBtnSize}px)`;
+        grid.style.gap = `${realGap}px`;
 
         const btns = [];
         for (let i = 0; i < totalBtns; i++) {
           const btn = document.createElement('div');
           btn.className = 'grid-btn';
-          btn.style.width = `${btnSize}px`;
-          btn.style.height = `${btnSize}px`;
+          btn.style.width = `${realBtnSize}px`;
+          btn.style.height = `${realBtnSize}px`;
           btn.style.borderRadius = '4px';
           btn.style.background = i === targetIdx ? CONFIG.colors.target : CONFIG.colors.distractor;
           btn.dataset.idx = i;
