@@ -316,6 +316,7 @@
       width: 100%;
       height: 100%;
       box-sizing: border-box;
+      padding: 6px;
     }
 
     .button-grid .grid-btn {
@@ -325,9 +326,9 @@
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
       transition: none;  /* 无过渡，确保 RT 准确 */
+      box-sizing: border-box;
       width: 100%;
       height: 100%;
-      box-sizing: border-box;
     }
 
     .button-grid .grid-btn.hit-feedback {
@@ -843,9 +844,9 @@
       // 网格行列数 [rows, cols] — 铺满屏幕，按键个数随条件变化
       // 按钮大小由可用屏幕空间 ÷ (cols, rows, gap) 动态算出
       gridLayout: {
-        small:  { tight: [8,6], moderate: [6,5], loose: [5,4] },
-        medium: { tight: [6,5], moderate: [5,4], loose: [4,4] },
-        large:  { tight: [5,4], moderate: [4,4], loose: [3,3] }
+        small:  { tight: [16,6], moderate: [12,5], loose: [10,4] },
+        medium: { tight: [12,5], moderate: [10,4], loose: [8,4] },
+        large:  { tight: [10,4], moderate: [8,4], loose: [6,3] }
       }
     };
 
@@ -1227,7 +1228,6 @@
         const gap = cond.spacingCss;
         const totalBtns = rows * cols;
         const targetIdx = Math.floor(Math.random() * totalBtns);
-        const pad = 8;
 
         // 构建按钮
         const grid = document.createElement('div');
@@ -1235,7 +1235,6 @@
         grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
         grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
         grid.style.gap = `${gap}px`;
-        grid.style.padding = `${pad}px`;
 
         const btns = [];
         for (let i = 0; i < totalBtns; i++) {
