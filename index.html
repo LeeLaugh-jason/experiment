@@ -307,13 +307,15 @@
       transform: translateY(-50%);
     }
 
-    /* 按钮网格容器 — 从顶部开始排列，充分利用屏幕纵向空间 */
+    /* 按钮网格容器 — 铺满整个实验区域 */
     .button-grid {
       display: grid;
       position: absolute;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
     }
 
     .button-grid .grid-btn {
@@ -323,6 +325,9 @@
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
       transition: none;  /* 无过渡，确保 RT 准确 */
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
     }
 
     .button-grid .grid-btn.hit-feedback {
@@ -1217,42 +1222,25 @@
         // Step 2: 前刺激延迟 500ms
         await this._sleep(CONFIG.preStimulusDelayMs);
 
-        // Step 3: 生成按钮网格 — 动态计算尺寸铺满屏幕
+        // Step 3: 生成按钮网格 — 用 1fr 铺满整个实验区域
         const [rows, cols] = this._gridRowsCols(cond);
         const gap = cond.spacingCss;
         const totalBtns = rows * cols;
         const targetIdx = Math.floor(Math.random() * totalBtns);
-
-        // 计算可用屏幕空间
-        const areaRect = area.getBoundingClientRect();
-        const pad = 12;
-        const availW = areaRect.width - pad * 2;
-        const availH = areaRect.height - pad * 2;
-
-        // 根据行列数和间距算出按钮尺寸，刚好填满可用区域
-        const btnSizeByW = (availW - (cols - 1) * gap) / cols;
-        const btnSizeByH = (availH - (rows - 1) * gap) / rows;
-        const btnSize = Math.floor(Math.min(btnSizeByW, btnSizeByH));
-        const realBtnSize = Math.max(btnSize, 20); // 最小 20px 防止太小
-        const realGap = gap;
-
-        // 计算网格总尺寸
-        const gridW = cols * realBtnSize + (cols - 1) * realGap;
-        const gridH = rows * realBtnSize + (rows - 1) * realGap;
+        const pad = 8;
 
         // 构建按钮
         const grid = document.createElement('div');
         grid.className = 'button-grid';
-        grid.style.gridTemplateColumns = `repeat(${cols}, ${realBtnSize}px)`;
-        grid.style.gridTemplateRows = `repeat(${rows}, ${realBtnSize}px)`;
-        grid.style.gap = `${realGap}px`;
+        grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+        grid.style.gap = `${gap}px`;
+        grid.style.padding = `${pad}px`;
 
         const btns = [];
         for (let i = 0; i < totalBtns; i++) {
           const btn = document.createElement('div');
           btn.className = 'grid-btn';
-          btn.style.width = `${realBtnSize}px`;
-          btn.style.height = `${realBtnSize}px`;
           btn.style.borderRadius = '4px';
           btn.style.background = i === targetIdx ? CONFIG.colors.target : CONFIG.colors.distractor;
           btn.dataset.idx = i;
