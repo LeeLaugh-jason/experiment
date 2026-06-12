@@ -307,13 +307,13 @@
       transform: translateY(-50%);
     }
 
-    /* 按钮网格容器 */
+    /* 按钮网格容器 — 从顶部开始排列，充分利用屏幕纵向空间 */
     .button-grid {
       display: grid;
       position: absolute;
-      top: 50%;
+      top: 10px;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translateX(-50%);
     }
 
     .button-grid .grid-btn {
@@ -818,7 +818,7 @@
       // 实验参数
       practiceTrials: 2,        // 练习试次（熟悉操作用）
       formalTrialsPerCondition: 10,  // 正式实验每种条件试次数
-      timeoutMs: 8000,          // 超时时间 (ms)
+      timeoutMs: 1500,          // 超时时间 (ms) — 1.5s 快速反应，制造时间压力
       preStimulusDelayMs: 500,  // 点击起始十字后到按钮呈现的延迟
       hitFeedbackMs: 80,        // 命中反馈闪烁时长
       interTrialMs: 300,        // 试次间空白间隔
@@ -836,9 +836,9 @@
       // 每种条件下的网格配置 [rows, cols]
       // [size][spacing]
       gridLayout: {
-        small:  { tight: [4,4], moderate: [4,3], loose: [3,3] },
-        medium: { tight: [3,3], moderate: [3,3], loose: [3,3] },
-        large:  { tight: [3,3], moderate: [3,3], loose: [3,3] }
+        small:  { tight: [6,5], moderate: [5,4], loose: [4,4] },
+        medium: { tight: [4,4], moderate: [4,3], loose: [3,3] },
+        large:  { tight: [3,4], moderate: [3,3], loose: [3,3] }
       }
     };
 
@@ -1162,7 +1162,8 @@
         const desc = isPractice
           ? '先练习 2 次，熟悉当前条件的操作方式。'
           : '正式实验开始！请在保证准确的前提下尽快点击。';
-        const detail = `按钮: ${cond.sizeLabel} · 间距: ${cond.spacingLabel}`;
+        const timeoutSec = CONFIG.timeoutMs / 1000;
+        const detail = `按钮: ${cond.sizeLabel} · 间距: ${cond.spacingLabel}<br><span style="color:#FF3B30;">⏱ 超过 ${timeoutSec}s 未点击算超时</span>`;
         const btnText = isPractice ? '开始练习' : '开始实验';
 
         area.innerHTML = `
